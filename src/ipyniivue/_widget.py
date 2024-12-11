@@ -21,6 +21,8 @@ class Mesh(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
     )
+    id = t.Unicode(default_value='').tag(sync=True)
+    name = t.Unicode(default_value='').tag(sync=True)
     rgba255 = t.List([0, 0, 0, 0]).tag(sync=True)
     opacity = t.Float(1.0).tag(sync=True)
     visible = t.Bool(True).tag(sync=True)
@@ -31,6 +33,8 @@ class Volume(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
     )
+    id = t.Unicode(default_value='').tag(sync=True)
+    name = t.Unicode(default_value='').tag(sync=True)
     opacity = t.Float(1.0).tag(sync=True)
     colormap = t.Unicode("gray").tag(sync=True)
     colorbar_visible = t.Bool(True).tag(sync=True)
@@ -78,9 +82,75 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         if event in self._event_handlers:
             self._event_handlers[event](data)
 
+    '''
+    Custom events
+    '''
+    def on_azimuth_elevation_change(self, callback, remove=False):
+        """Register a callback for the 'azimuth_elevation_change' event."""
+        self._register_callback('azimuth_elevation_change', callback, remove=remove)
+
+    def on_click_to_segment(self, callback, remove=False):
+        """Register a callback for the 'click_to_segment' event."""
+        self._register_callback('click_to_segment', callback, remove=remove)
+
+    def on_clip_plane_change(self, callback, remove=False):
+        """Register a callback for the 'clip_plane_change' event."""
+        self._register_callback('clip_plane_change', callback, remove=remove)
+    
+    def on_document_loaded(self, callback, remove=False):
+        """Register a callback for the 'document_loaded' event."""
+        self._register_callback('document_loaded', callback, remove=remove)
+
     def on_image_loaded(self, callback, remove=False):
         """Register a callback for the 'image_loaded' event."""
         self._register_callback('image_loaded', callback, remove=remove)
+    
+    def on_drag_release(self, callback, remove=False):
+        """Register a callback for the 'drag_release' event."""
+        self._register_callback('drag_release', callback, remove=remove)
+    
+    def on_frame_change(self, callback, remove=False):
+        """Register a callback for the 'frame_change' event."""
+        self._register_callback('frame_change', callback, remove=remove)
+    
+    def on_intensity_change(self, callback, remove=False):
+        """Register a callback for the 'intensity_change' event."""
+        self._register_callback('intensity_change', callback, remove=remove)
+    
+    def on_location_change(self, callback, remove=False):
+        """Register a callback for the 'location_change' event."""
+        self._register_callback('location_change', callback, remove=remove)
+    
+    def on_mesh_added_from_url(self, callback, remove=False):
+        """Register a callback for the 'mesh_added_from_url' event."""
+        self._register_callback('mesh_added_from_url', callback, remove=remove)
+    
+    def on_mesh_loaded(self, callback, remove=False):
+        """Register a callback for the 'mesh_loaded' event."""
+        self._register_callback('mesh_loaded', callback, remove=remove)
+    
+    def on_mouse_up(self, callback, remove=False):
+        """Register a callback for the 'mouse_up' event."""
+        self._register_callback('mouse_up', callback, remove=remove)
+    
+    def on_volume_added_from_url(self, callback, remove=False):
+        """Register a callback for the 'volume_added_from_url' event."""
+        self._register_callback('volume_added_from_url', callback, remove=remove)
+    
+    def on_volume_updated(self, callback, remove=False):
+        """Register a callback for the 'volume_updated' event."""
+        self._register_callback('volume_updated', callback, remove=remove)
+
+    '''
+    Methods
+    '''
+
+    def get_volume_index_by_id(self, id_: str) -> int:
+        """Return the index of the volume with the given id."""
+        for idx, vol in enumerate(self._volumes):
+            if vol.id == id_:
+                return idx
+        raise ValueError(f"No volume with id {id_} found")
 
     def load_volumes(self, volumes: list):
         """Load a list of volumes into the widget.

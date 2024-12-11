@@ -18,24 +18,138 @@ export default {
 		nv.attachToCanvas(canvas);
 
 		// Attach Niivue event handlers
+    nv.onAzimuthElevationChange = function (azimuth: number, elevation: number) {
+      model.send({
+        event: "azimuth_elevation_change",
+        data: { azimuth, elevation },
+      });
+    }
+
+    nv.onClickToSegment = function (data: { mm3: number; mL: number; }) {
+      model.send({
+        event: "click_to_segment",
+        data,
+      });
+    }
+
+    nv.onClipPlaneChange = function (clipPlane: number[]) {
+      model.send({
+        event: "clip_plane_change",
+        data: clipPlane,
+      });
+    }
+
+    nv.onDocumentLoaded = function (document: niivue.NVDocument) {
+      model.send({
+        event: "document_loaded",
+        data: {
+          title: document.title,
+          opts: document.opts,
+          volumes: document.volumes.map((volume) => volume.id),
+          meshes: document.meshes.map((mesh) => mesh.id),
+        },
+      });
+    }
+    
 		nv.onImageLoaded = function (volume: niivue.NVImage) {
 			model.send({
 				event: "image_loaded",
 				data: {
-					name: volume.name,
-					colormap: volume.colormap,
-					opacity: volume.opacity,
-					cal_min: volume.cal_min,
-					cal_max: volume.cal_max,
-					trustCalMinMax: volume.trustCalMinMax,
-					percentileFrac: volume.percentileFrac,
-					ignoreZeroVoxels: volume.ignoreZeroVoxels,
-					useQFormNotSForm: volume.useQFormNotSForm,
-					colormapNegative: volume.colormapNegative,
-					frame4D: volume.frame4D,
+          id: volume.id,
 				},
 			});
 		};
+
+    nv.onDragRelease = function (params: niivue.DragReleaseParams) {
+      model.send({
+        event: "drag_release",
+        data: {
+          fracStart: params.fracStart,
+          fracEnd: params.fracEnd,
+          voxStart: params.voxStart,
+          voxEnd: params.voxEnd,
+          mmStart: params.mmStart,
+          mmEnd: params.mmEnd,
+          mmLength: params.mmLength,
+          tileIdx: params.tileIdx,
+          axCorSag: params.axCorSag,
+        },
+      });
+    }
+
+    nv.onFrameChange = function (volume: niivue.NVImage, frame: number) {
+      model.send({
+        event: "frame_change",
+        data: {
+          id: volume.id,
+          frame,
+        },
+      });
+    }
+
+    nv.onIntensityChange = function (volume: niivue.NVImage) {
+      model.send({
+        event: "intensity_change",
+        data: {
+          id: volume.id,
+        },
+      });
+    }
+
+    nv.onLocationChange = function(location: any) { //niivue.NiiVueLocation
+      model.send({
+        event: "location_change",
+        data: {
+          xy: location.xy,
+          string: location.string,
+        },
+      });
+    }
+
+    nv.onMeshAddedFromUrl = function (meshOptions: any, mesh: niivue.NVMesh) {
+      model.send({
+        event: "mesh_added_from_url",
+        data: {
+          url: meshOptions.url,
+          headers: meshOptions?.headers || {},
+          mesh: mesh.id,
+        },
+      });
+
+      nv.onMeshLoaded = function (mesh: niivue.NVMesh) {
+        model.send({
+          event: "mesh_loaded",
+          data: {
+            id: mesh.id,
+          },
+        });
+      }
+
+      nv.onMouseUp = function (data: any) {
+        model.send({
+          event: "mouse_up",
+          data,
+        });
+      }
+
+      nv.onVolumeAddedFromUrl = function (imageOptions: any, volume: niivue.NVImage) {
+        model.send({
+          event: "volume_added_from_url",
+          data: {
+            url: imageOptions.url,
+            headers: imageOptions?.headers || {},
+            volume: volume.id,
+          },
+        });
+      }
+
+      nv.onVolumeUpdated = function () {
+        model.send({
+          event: "volume_updated",
+        });
+      }
+
+    }
 
 		await render_volumes(nv, model, disposer);
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
