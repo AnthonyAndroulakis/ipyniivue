@@ -2,6 +2,7 @@ import pathlib
 
 import anywidget
 import ipywidgets
+from ipywidgets import CallbackDispatcher
 import traitlets as t
 
 from ._constants import _SNAKE_TO_CAMEL_OVERRIDES
@@ -58,6 +59,28 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
             for k, v in options.items()
         }
         super().__init__(height=height, _opts=_opts, _volumes=[], _meshes=[])
+
+        # on event
+        self._event_handlers = {}
+        self.on_msg(self._handle_custom_msg)
+
+    def _register_callback(self, event_name, callback, remove=False):
+        if event_name not in self._event_handlers:
+            self._event_handlers[event_name] = CallbackDispatcher()
+        if remove:
+            self._event_handlers[event_name].remove(callback)
+        else:
+            self._event_handlers[event_name].register_callback(callback)
+    
+    def _handle_custom_msg(self, content, buffers):
+        event = content.get('event', '')
+        data = content.get('data', {})
+        if event in self._event_handlers:
+            self._event_handlers[event](data)
+
+    def on_image_loaded(self, callback, remove=False):
+        """Register a callback for the 'image_loaded' event."""
+        self._register_callback('image_loaded', callback, remove=remove)
 
     def load_volumes(self, volumes: list):
         """Load a list of volumes into the widget.

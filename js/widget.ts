@@ -17,6 +17,26 @@ export default {
 		const nv = new niivue.Niivue(model.get("_opts") ?? {});
 		nv.attachToCanvas(canvas);
 
+		// Attach Niivue event handlers
+		nv.onImageLoaded = function (volume: niivue.NVImage) {
+			model.send({
+				event: "image_loaded",
+				data: {
+					name: volume.name,
+					colormap: volume.colormap,
+					opacity: volume.opacity,
+					cal_min: volume.cal_min,
+					cal_max: volume.cal_max,
+					trustCalMinMax: volume.trustCalMinMax,
+					percentileFrac: volume.percentileFrac,
+					ignoreZeroVoxels: volume.ignoreZeroVoxels,
+					useQFormNotSForm: volume.useQFormNotSForm,
+					colormapNegative: volume.colormapNegative,
+					frame4D: volume.frame4D,
+				},
+			});
+		};
+
 		await render_volumes(nv, model, disposer);
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
 		await render_meshes(nv, model, disposer);
