@@ -96,12 +96,17 @@ export default {
       });
     }
 
-    nv.onLocationChange = function(location: any) { //niivue.NiiVueLocation
+    nv.onLocationChange = function (location: any) {
       model.send({
         event: "location_change",
         data: {
-          xy: location.xy,
+          axCorSag: location.axCorSag,
+          frac: location.frac,
+          mm: location.mm,
           string: location.string,
+          vox: location.vox,
+          values: location.values,
+          xy: location.xy,
         },
       });
     }
@@ -166,6 +171,16 @@ export default {
 		model.on("change:height", () => {
 			container.style.height = `${model.get("height")}px`;
 		});
+
+    // Handle custom messages from the backend
+    model.on("msg:custom", (payload: {type: string, data: any}) => {
+      const { type, data } = payload;
+      switch (type) { 
+        case "save_scene":
+          nv.saveScene(data);
+          break;
+      }
+    });
 
 		// All the logic for cleaning up the event listeners and the nv object
 		return () => {

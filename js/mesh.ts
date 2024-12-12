@@ -32,6 +32,11 @@ function create_mesh(
 			layer.cal_max ?? null,
 		);
 	}
+
+	mmodel.set("id", mesh.id);
+	mmodel.set("name", mesh.name);
+	mmodel.save_changes();
+
 	function opacity_changed() {
 		mesh.opacity = mmodel.get("opacity");
 		mesh.updateMesh(nv.gl);
