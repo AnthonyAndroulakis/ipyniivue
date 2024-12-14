@@ -57,7 +57,7 @@ export default {
 				data: {
           id: volume.id,
 				},
-			});
+			})
 		};
 
     nv.onDragRelease = function (params: niivue.DragReleaseParams) {
@@ -74,8 +74,8 @@ export default {
           tileIdx: params.tileIdx,
           axCorSag: params.axCorSag,
         },
-      });
-    }
+      })
+    };
 
     nv.onFrameChange = function (volume: niivue.NVImage, frame: number) {
       model.send({
@@ -84,8 +84,8 @@ export default {
           id: volume.id,
           frame,
         },
-      });
-    }
+      })
+    };
 
     nv.onIntensityChange = function (volume: niivue.NVImage) {
       model.send({
@@ -93,8 +93,8 @@ export default {
         data: {
           id: volume.id,
         },
-      });
-    }
+      })
+    };
 
     nv.onLocationChange = function (location: any) {
       model.send({
@@ -108,8 +108,8 @@ export default {
           values: location.values,
           xy: location.xy,
         },
-      });
-    }
+      })
+    };
 
     nv.onMeshAddedFromUrl = function (meshOptions: any, mesh: niivue.NVMesh) {
       model.send({
@@ -119,42 +119,41 @@ export default {
           headers: meshOptions?.headers || {},
           mesh: mesh.id,
         },
-      });
+      })
+    };
 
-      nv.onMeshLoaded = function (mesh: niivue.NVMesh) {
-        model.send({
-          event: "mesh_loaded",
-          data: {
-            id: mesh.id,
-          },
-        });
-      }
+    nv.onMeshLoaded = function (mesh: niivue.NVMesh) {
+      model.send({
+        event: "mesh_loaded",
+        data: {
+          id: mesh.id,
+        },
+      })
+    };
 
-      nv.onMouseUp = function (data: any) {
-        model.send({
-          event: "mouse_up",
-          data,
-        });
-      }
+    nv.onMouseUp = function (data: any) {
+      model.send({
+        event: "mouse_up",
+        data,
+      })
+    };
 
-      nv.onVolumeAddedFromUrl = function (imageOptions: any, volume: niivue.NVImage) {
-        model.send({
-          event: "volume_added_from_url",
-          data: {
-            url: imageOptions.url,
-            headers: imageOptions?.headers || {},
-            volume: volume.id,
-          },
-        });
-      }
+    nv.onVolumeAddedFromUrl = function (imageOptions: any, volume: niivue.NVImage) {
+      model.send({
+        event: "volume_added_from_url",
+        data: {
+          url: imageOptions.url,
+          headers: imageOptions?.headers || {},
+          volume: volume.id,
+        },
+      })
+    };
 
-      nv.onVolumeUpdated = function () {
-        model.send({
-          event: "volume_updated",
-        });
-      }
-
-    }
+    nv.onVolumeUpdated = function () {
+      model.send({
+        event: "volume_updated",
+      })
+    };
 
 		await render_volumes(nv, model, disposer);
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
