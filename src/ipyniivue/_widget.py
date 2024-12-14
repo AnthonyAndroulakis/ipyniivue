@@ -82,7 +82,7 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         if event in self._event_handlers:
             if event == "image_loaded":
                 idx = self.get_volume_index_by_id(data["id"])
-                if id != -1:
+                if idx != -1:
                     self._event_handlers[event](self._volumes[idx])
                 else:
                     self._event_handlers[event](data)
