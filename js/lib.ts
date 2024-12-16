@@ -57,16 +57,23 @@ export function determine_update_type<T>(
  */
 export class Disposer {
 	#disposers = new Map<string, () => void>();
-	register(obj: nv.NVMesh | nv.NVImage, disposer: () => void): void {
-		const prefix = obj instanceof nv.NVMesh ? "mesh" : "image";
-		this.#disposers.set(`${prefix}:${obj.name}`, disposer);
+	register(obj: { id: string } | { id: string | undefined }, disposer: () => void): void {
+		const id = obj.id || "";
+		this.#disposers.set(id, disposer);
 	}
-	disposeAll(kind?: "mesh" | "image"): void {
-		for (const [name, dispose] of this.#disposers) {
-			if (!kind || name.startsWith(kind)) {
-				dispose();
-				this.#disposers.delete(name);
-			}
+  
+	dispose(id: string): void {
+		const dispose = this.#disposers.get(id);
+		if (dispose) {
+			dispose();
+			this.#disposers.delete(id);
 		}
+	}
+
+	disposeAll(): void {
+		for (const dispose of this.#disposers.values()) {
+			dispose();
+		}
+		this.#disposers.clear();
 	}
 }

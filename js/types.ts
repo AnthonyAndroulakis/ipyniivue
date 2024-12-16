@@ -7,6 +7,8 @@ interface File {
 
 export type VolumeModel = { model_id: string } & AnyModel<{
 	path: File;
+	id: string;
+	name: string;
 	colormap: string;
 	opacity: number;
 	visible: boolean;
@@ -27,6 +29,8 @@ interface MeshLayer {
 
 export type MeshModel = { model_id: string } & AnyModel<{
 	path: File;
+	id: string;
+	name: string;
 	rgba255: Array<number>;
 	opacity: number;
 	layers: Array<MeshLayer>;
