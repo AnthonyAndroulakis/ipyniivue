@@ -10,26 +10,32 @@ function create_volume(
 	nv: niivue.Niivue,
 	vmodel: VolumeModel,
 ): [niivue.NVImage, () => void] {
-	const volume = new niivue.NVImage(
-		vmodel.get("path").data.buffer, // dataBuffer
-		lib.unique_id(vmodel), // name
-		vmodel.get("colormap"), // colormap
-		vmodel.get("opacity"), // opacity
-		undefined, // pairedImgData
-		vmodel.get("cal_min"), // cal_min
-		vmodel.get("cal_max"), // cal_max
-		undefined, // trustMinCalMinMax
-		undefined, // percentileFrac
-		undefined, // ignoreZeroVoxels
-		undefined, // useQFormNotSForm
-		undefined, // colormapNegative
-		undefined, // frame4D
-		undefined, // imageType
-		undefined, // cal_minNeg
-		undefined, // cal_maxNeg
-		vmodel.get("colorbar_visible"), // colorbarVisible
-		undefined, // colormapLabel
-	);
+	var volume: niivue.NVImage;
+	if (vmodel.get("path").name === "<preloaded>") {
+		let idx = nv.getVolumeIndexByID(vmodel.get("id"));
+		volume = nv.volumes[idx];
+	} else {
+		volume = new niivue.NVImage(
+			vmodel.get("path").data.buffer, // dataBuffer
+			lib.unique_id(vmodel), // name
+			vmodel.get("colormap"), // colormap
+			vmodel.get("opacity"), // opacity
+			undefined, // pairedImgData
+			vmodel.get("cal_min"), // cal_min
+			vmodel.get("cal_max"), // cal_max
+			undefined, // trustMinCalMinMax
+			undefined, // percentileFrac
+			undefined, // ignoreZeroVoxels
+			undefined, // useQFormNotSForm
+			undefined, // colormapNegative
+			undefined, // frame4D
+			undefined, // imageType
+			undefined, // cal_minNeg
+			undefined, // cal_maxNeg
+			vmodel.get("colorbar_visible"), // colorbarVisible
+			undefined, // colormapLabel
+		);
+	}
 
 	vmodel.set("id", volume.id);
 	vmodel.set("name", volume.name);
@@ -100,10 +106,17 @@ export async function render_volumes(
 		const id = volume.id || `__temp_id__${index}`;
 		frontend_volume_map.set(id, volume);
 	});
+
+	console.log('render_volumes called');
+	console.log('backend_volumes:', backend_volumes);
+	console.log('frontend_volumes:', frontend_volumes);
   
 	// add volumes
 	for (const [id, vmodel] of backend_volume_map.entries()) {
-		if (!frontend_volume_map.has(id) || vmodel.get("id") === "") {
+		if (!frontend_volume_map.has(id) 
+			|| vmodel.get("id") === "" 
+			|| (vmodel.get("path").name === "<preloaded>" && nv.getVolumeIndexByID(vmodel.get("id")) !== -1) // getVolumeIndexByID is for extra verification
+		) {
 			// case: volume is in backend but not in frontend, or id is empty
 			// result: add volume
 			const [volume, cleanup] = create_volume(nv, vmodel);

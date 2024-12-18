@@ -57,6 +57,7 @@ export function determine_update_type<T>(
  */
 export class Disposer {
 	#disposers = new Map<string, () => void>();
+  
 	register(obj: { id: string } | { id: string | undefined }, disposer: () => void): void {
 		const id = obj.id || "";
 		this.#disposers.set(id, disposer);

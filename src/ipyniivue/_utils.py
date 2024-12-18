@@ -10,9 +10,8 @@ def snake_to_camel(snake_str: str):
 
 def file_serializer(instance: typing.Union[pathlib.Path, str], widget: object):
     if isinstance(instance, str):
-        # special case for objs from frontend
-        if instance == "preloaded":
-            return {"name": "preloaded", "data": ""}
+        if instance == "<preloaded>":
+            return {"name": "<preloaded>", "data": b""}
         # make sure we have a pathlib.Path instance
         instance = pathlib.Path(instance)
     return {"name": instance.name, "data": instance.read_bytes()}

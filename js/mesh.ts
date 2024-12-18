@@ -10,27 +10,33 @@ function create_mesh(
 	nv: niivue.Niivue,
 	mmodel: MeshModel,
 ): [niivue.NVMesh, () => void] {
-	const mesh = niivue.NVMesh.readMesh(
-		mmodel.get("path").data.buffer, // buffer
-		mmodel.get("path").name, // name (used to identify the mesh)
-		nv.gl, // gl
-		mmodel.get("opacity"), // opacity
-		new Uint8Array(mmodel.get("rgba255")), // rgba255
-		mmodel.get("visible"), // visible
-	);
-	for (const layer of mmodel.get("layers")) {
-		// https://github.com/niivue/niivue/blob/10d71baf346b23259570d7b2aa463749adb5c95b/src/nvmesh.ts#L1432C5-L1455C6
-		niivue.NVMeshLoaders.readLayer(
-			layer.path.name,
-			layer.path.data.buffer,
-			mesh,
-			layer.opacity ?? 0.5,
-			layer.colormap ?? "warm",
-			layer.colormapNegative ?? "winter",
-			layer.useNegativeCmap ?? false,
-			layer.cal_min ?? null,
-			layer.cal_max ?? null,
+	let mesh: niivue.NVMesh;
+	if (mmodel.get("path").name === "<preloaded>") { 
+		let idx = nv.meshes.findIndex((m) => m.id === mmodel.get("id"));
+		mesh = nv.meshes[idx];
+	} else {
+		mesh = niivue.NVMesh.readMesh(
+			mmodel.get("path").data.buffer, // buffer
+			mmodel.get("path").name, // name (used to identify the mesh)
+			nv.gl, // gl
+			mmodel.get("opacity"), // opacity
+			new Uint8Array(mmodel.get("rgba255")), // rgba255
+			mmodel.get("visible"), // visible
 		);
+		for (const layer of mmodel.get("layers")) {
+			// https://github.com/niivue/niivue/blob/10d71baf346b23259570d7b2aa463749adb5c95b/src/nvmesh.ts#L1432C5-L1455C6
+			niivue.NVMeshLoaders.readLayer(
+				layer.path.name,
+				layer.path.data.buffer,
+				mesh,
+				layer.opacity ?? 0.5,
+				layer.colormap ?? "warm",
+				layer.colormapNegative ?? "winter",
+				layer.useNegativeCmap ?? false,
+				layer.cal_min ?? null,
+				layer.cal_max ?? null,
+			);
+		}
 	}
 
 	mmodel.set("id", mesh.id);
@@ -95,7 +101,11 @@ export async function render_meshes(
   
 	// add meshes
 	for (const [id, mmodel] of backend_mesh_map.entries()) {
-		if (!frontend_mesh_map.has(id) || mmodel.get("id") === "") {
+		if (
+			!frontend_mesh_map.has(id) 
+			|| mmodel.get("id") === ""
+			|| (mmodel.get("path").name === "<preloaded>" && nv.meshes.findIndex((m) => m.id === mmodel.get("id")) !== -1) // getting mesh index is for extra verification
+		) {
 			// case: mesh is in backend but not in frontend, or id is empty
 			// result: add mesh
 			const [mesh, cleanup] = create_mesh(nv, mmodel);
@@ -118,7 +128,7 @@ export async function render_meshes(
 	const new_meshes_order: niivue.NVMesh[] = [];
 	backend_meshes.forEach((mmodel) => {
 		const id = mmodel.get("id") || "";
-	 	const mesh = nv.meshes.find((m) => m.id === id);
+		const mesh = nv.meshes.find((m) => m.id === id);
 		if (mesh) {
 			new_meshes_order.push(mesh);
 		} else {
