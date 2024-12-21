@@ -16,7 +16,6 @@ from ._utils import (
 
 __all__ = ["NiiVue"]
 
-
 class Mesh(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
@@ -27,6 +26,18 @@ class Mesh(ipywidgets.Widget):
     opacity = t.Float(1.0).tag(sync=True)
     visible = t.Bool(True).tag(sync=True)
     layers = t.List([]).tag(sync=True, to_json=mesh_layers_serializer)
+
+    @t.validate('path')
+    def _validate_path(self, proposal):
+        if 'path' in self._trait_values and self.path and self.path != proposal['value']:
+            raise t.TraitError('Cannot modify path once set.')
+        return proposal['value']
+
+    @t.validate('id')
+    def _validate_id(self, proposal):
+        if 'id' in self._trait_values and self.id and self.id != proposal['value']:
+            raise t.TraitError('Cannot modify id once set.')
+        return proposal['value']
 
 class Volume(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
@@ -39,6 +50,18 @@ class Volume(ipywidgets.Widget):
     colorbar_visible = t.Bool(True).tag(sync=True)
     cal_min = t.Float(None, allow_none=True).tag(sync=True)
     cal_max = t.Float(None, allow_none=True).tag(sync=True)
+
+    @t.validate('path')
+    def _validate_path(self, proposal):
+        if 'path' in self._trait_values and self.path and self.path != proposal['value']:
+            raise t.TraitError('Cannot modify path once set.')
+        return proposal['value']
+
+    @t.validate('id')
+    def _validate_id(self, proposal):
+        if 'id' in self._trait_values and self.id and self.id != proposal['value']:
+            raise t.TraitError('Cannot modify id once set.')
+        return proposal['value']
 
 class NiiVue(OptionsMixin, anywidget.AnyWidget):
     """Represents a Niivue instance."""
