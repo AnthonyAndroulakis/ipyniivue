@@ -5,14 +5,7 @@ import { Disposer } from "./lib.ts";
 import { render_meshes } from "./mesh.ts";
 import { render_volumes } from "./volume.ts";
 
-declare var globalThis: any;
-
-if (!globalThis.nv) {
-  globalThis.nv = new niivue.Niivue();
-}
-
-const nv: niivue.Niivue = globalThis.nv;
-globalThis.eventHandlersInstalled = false;
+const nvMap = new WeakMap<Model, niivue.Niivue>();
 
 export default {
 	async render({ model, el }: { model: Model; el: HTMLElement }) {
@@ -23,11 +16,13 @@ export default {
 		container.appendChild(canvas);
 		el.appendChild(container);
 
-    nv.attachToCanvas(canvas);
+    let nv = nvMap.get(model);
+    
+    if (!nv) {
+      nv = new niivue.Niivue(model.get("_opts"));
+      nvMap.set(model, nv);
 
-
-    if (!globalThis.eventHandlersInstalled) {
-      globalThis.eventHandlersInstalled = true;
+      nv.attachToCanvas(canvas);
 
       // Attach Niivue event handlers
       nv.onAzimuthElevationChange = function (azimuth: number, elevation: number) {
@@ -76,7 +71,7 @@ export default {
 
         const backendVolumeIds = volumeModels.map((vmodel) => vmodel?.get("id") || "");
 
-        if (!backendVolumeIds.includes(volumeID)) {
+        if (!backendVolumeIds.includes(volumeID) && nv) {
           // Volume is new; create a new VolumeModel in the backend
           // volume.toUint8Array().slice().buffer for data
           const volumeData = {
@@ -189,7 +184,7 @@ export default {
 
         const backendMeshIds = meshModels.map((mmodel) => mmodel?.get("id") || "");
 
-        if (!backendMeshIds.includes(meshID)) {
+        if (!backendMeshIds.includes(meshID) && nv) {
           // Mesh is new; create a new MeshModel in the backend
           const meshData = {
             path: '<preloaded>',
@@ -260,6 +255,9 @@ export default {
       // Load initial volumes and meshes
       await render_volumes(nv, model, disposer);
       await render_meshes(nv, model, disposer);
+    } else {
+      // For re-renders, attach nv to the new canvas
+      nv.attachToCanvas(canvas);
     }
 	
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
@@ -267,11 +265,15 @@ export default {
 
 		// Any time we change the options, we need to update the nv object
 		// and redraw the scene.
-		model.on("change:_opts", () => {
-			nv.document.opts = { ...nv.opts, ...model.get("_opts") };
-			nv.drawScene();
-			nv.updateGLVolume();
-		});
+    model.on("change:_opts", () => {
+      // Update nv.opts with the new options
+      nv.document.opts = { ...nv.opts, ...model.get("_opts") };
+    
+      // Redraw the scene and update the volumes
+      nv.drawScene();
+      nv.updateGLVolume();
+    });
+
 		model.on("change:height", () => {
 			container.style.height = `${model.get("height")}px`;
 		});
@@ -283,6 +285,12 @@ export default {
         case "save_scene":
           nv.saveScene(data);
           break;
+        case "add_colormap":
+          nv.addColormap(data.name, data.cmap);
+          break;
+        case "set_gamma":
+          nv.setGamma(data);
+          break;
       }
     });
 
@@ -290,7 +298,10 @@ export default {
 		return () => {
 			disposer.disposeAll();
 			model.off("change:_volumes");
+      model.off("change:_meshes");
 			model.off("change:_opts");
+      model.off("change:height");
+      model.off("msg:custom");
 		};
 	},
 };

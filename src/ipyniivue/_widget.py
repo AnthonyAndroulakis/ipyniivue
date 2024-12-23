@@ -40,6 +40,7 @@ class Mesh(ipywidgets.Widget):
         return proposal['value']
 
 class Volume(ipywidgets.Widget):
+    # variables in init
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
     )
@@ -50,6 +51,15 @@ class Volume(ipywidgets.Widget):
     colorbar_visible = t.Bool(True).tag(sync=True)
     cal_min = t.Float(None, allow_none=True).tag(sync=True)
     cal_max = t.Float(None, allow_none=True).tag(sync=True)
+
+    # other properties that aren't in init
+    colormap_invert = t.Bool(False).tag(sync=True)
+
+    def __init__(self, **kwargs):
+        if 'colormap_invert' in kwargs:
+            kwargs.pop('colormap_invert')
+        super().__init__(**kwargs)
+
 
     @t.validate('path')
     def _validate_path(self, proposal):
@@ -64,7 +74,68 @@ class Volume(ipywidgets.Widget):
         return proposal['value']
 
 class NiiVue(OptionsMixin, anywidget.AnyWidget):
-    """Represents a Niivue instance."""
+    """
+    Represents a Niivue instance.
+
+    Parameters:
+        height (int, optional): The height of the widget in pixels. Defaults to `300`.
+        text_height (float, optional): Height of text labels. Defaults to `0.06`.
+        colorbar_height (float, optional): Height of the colorbar as a fraction of the canvas height. Defaults to `0.05`.
+        crosshair_width (int, optional): Width of the crosshair lines in pixels. Defaults to `1`.
+        ruler_width (int, optional): Width of the ruler lines in pixels. Defaults to `4`.
+        show_3d_crosshair (bool, optional): Whether to display the 3D crosshair. Defaults to `False`.
+        back_color (tuple, optional): Background color as an RGBA tuple. Defaults to `(0, 0, 0, 1)`.
+        crosshair_color (tuple, optional): Crosshair color as an RGBA tuple. Defaults to `(1, 0, 0, 1)`.
+        font_color (tuple, optional): Font color as an RGBA tuple. Defaults to `(0.5, 0.5, 0.5, 1)`.
+        selection_box_color (tuple, optional): Selection box color as an RGBA tuple. Defaults to `(1, 1, 1, 0.5)`.
+        clip_plane_color (tuple, optional): Clip plane color as an RGBA tuple. Defaults to `(0.7, 0, 0.7, 0.5)`.
+        ruler_color (tuple, optional): Ruler color as an RGBA tuple. Defaults to `(1, 0, 0, 0.8)`.
+        colorbar_margin (float, optional): Margin around the colorbar as a fraction of canvas size. Defaults to `0.05`.
+        trust_cal_min_max (bool, optional): Whether to trust cal_min and cal_max from image header. Defaults to `True`.
+        clip_plane_hot_key (str, optional): Hotkey to toggle clip plane. Defaults to `"KeyC"`.
+        view_mode_hot_key (str, optional): Hotkey to toggle view modes. Defaults to `"KeyV"`.
+        double_touch_timeout (int, optional): Timeout for double touch in milliseconds. Defaults to `500`.
+        long_touch_timeout (int, optional): Timeout for long touch in milliseconds. Defaults to `1000`.
+        key_debounce_time (int, optional): Debounce time for key events in milliseconds. Defaults to `50`.
+        is_nearest_interpolation (bool, optional): Use nearest neighbor interpolation if `True`. Defaults to `False`.
+        is_resize_canvas (bool, optional): Automatically resize the canvas to fit container if `True`. Defaults to `True`.
+        is_atlas_outline (bool, optional): Display atlas outlines if `True`. Defaults to `False`.
+        is_ruler (bool, optional): Enable ruler tool if `True`. Defaults to `False`.
+        is_colorbar (bool, optional): Display colorbar if `True`. Defaults to `False`.
+        is_orient_cube (bool, optional): Display orientation cube if `True`. Defaults to `False`.
+        multiplanar_pad_pixels (int, optional): Padding in pixels for multiplanar views. Defaults to `0`.
+        multiplanar_force_render (bool, optional): Force rendering of multiplanar views if `True`. Defaults to `False`.
+        is_radiological_convention (bool, optional): Use radiological convention if `True`. Defaults to `False`.
+        mesh_thickness_on_2d (float, optional): Thickness of the mesh overlay on 2D slices. Defaults to `float('inf')`.
+        drag_mode (DragMode, optional): Mode for drag interactions. Defaults to `DragMode.CONTRAST`.
+        yoke_3d_to_2d_zoom (bool, optional): Yoke 3D zoom to 2D zoom if `True`. Defaults to `False`.
+        is_depth_pick_mesh (bool, optional): Enable depth picking for meshes if `True`. Defaults to `False`.
+        is_corner_orientation_text (bool, optional): Display corner orientation text if `True`. Defaults to `False`.
+        sagittal_nose_left (bool, optional): Display nose on the left in sagittal view if `True`. Defaults to `False`.
+        is_slice_mm (bool, optional): Use millimeters for slice labels if `True`. Defaults to `False`.
+        is_v1_slice_shader (bool, optional): Use version 1 slice shader if `True`. Defaults to `False`.
+        is_high_resolution_capable (bool, optional): Allow high-resolution rendering if `True`. Defaults to `True`.
+        log_level (str, optional): Logging level. Choices are `"debug"`, `"info"`, `"warn"`, `"error"`. Defaults to `"info"`.
+        loading_text (str, optional): Text to display while loading images. Defaults to `"waiting for images..."`.
+        is_force_mouse_click_to_voxel_centers (bool, optional): Snap mouse clicks to voxel centers if `True`. Defaults to `False`.
+        drag_and_drop_enabled (bool, optional): Enable drag-and-drop of images if `True`. Defaults to `True`.
+        drawing_enabled (bool, optional): Enable drawing tools if `True`. Defaults to `False`.
+        pen_value (int, optional): Value for the pen when drawing. Defaults to `1`.
+        flood_fill_neighbors (int, optional): Number of neighbors for flood fill tool (6 or 26). Defaults to `6`.
+        is_filled_pen (bool, optional): Use filled pen when drawing if `True`. Defaults to `False`.
+        thumbnail (str, optional): URL or path to a thumbnail image. Defaults to `""`.
+        max_draw_undo_bitmaps (int, optional): Maximum number of undo steps for drawing. Defaults to `8`.
+        slice_type (SliceType, optional): Type of slice display. Options are `AXIAL`, `CORONAL`, `SAGITTAL`, `MULTIPLANAR`. Defaults to `SliceType.MULTIPLANAR`.
+        mesh_x_ray (float, optional): X-ray effect intensity for meshes. Range from `0.0` (none) to `1.0` (full). Defaults to `0.0`.
+        is_anti_alias (bool, optional): Enable anti-aliasing if `True`. Defaults to `None`.
+        limit_frames_4d (float, optional): Limit the number of frames for 4D data. Defaults to `float('nan')`.
+        is_additive_blend (bool, optional): Use additive blending for overlays if `True`. Defaults to `False`.
+        show_legend (bool, optional): Display the legend if `True`. Defaults to `True`.
+        legend_background_color (tuple, optional): Background color of the legend as RGBA tuple. Defaults to `(0.3, 0.3, 0.3, 0.5)`.
+        legend_text_color (tuple, optional): Text color of the legend as RGBA tuple. Defaults to `(1.0, 1.0, 1.0, 1.0)`.
+        multiplanar_layout (MuliplanarType, optional): Layout for multiplanar view. Options are `AXIAL`, `CORONAL`, `SAGITTAL`, `MULTIPLANAR`, `YOKE`. Defaults to `MuliplanarType.AUTO`.
+        render_overlay_blend (float, optional): Blend factor for overlay rendering. Range from `0.0` to `1.0`. Defaults to `1.0`.
+    """
 
     _esm = pathlib.Path(__file__).parent / "static" / "widget.js"
 
@@ -649,7 +720,199 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
     def meshes(self):
         """Returns the list of meshes."""
         return list(self._meshes)
+    
+    
+    '''
+    Other functions
+    '''
+    def colormaps(self):
+        """Retrieve the list of available colormap names.
 
+        Returns
+        -------
+        list of str
+            A list containing the names of all available colormaps that can be used
+        """
+        return [
+            "actc", "afni_blues_inv", "afni_reds_inv", "bcgwhw", "bcgwhw_dark",
+            "blue", "blue2cyan", "blue2magenta", "blue2red", "bluegrn", "bone",
+            "bronze", "cet_l17", "cividis", "cool", "copper", "copper2",
+            "ct_airways", "ct_artery", "ct_bones", "ct_brain", "ct_brain_gray",
+            "ct_cardiac", "ct_head", "ct_kidneys", "ct_liver", "ct_muscles",
+            "ct_scalp", "ct_skull", "ct_soft", "ct_soft_tissue", "ct_surface",
+            "ct_vessels", "ct_w_contrast", "cubehelix", "electric_blue",
+            "freesurfer", "ge_color", "gold", "gray", "green", "green2cyan",
+            "green2orange", "hot", "hotiron", "hsv", "inferno", "jet", "linspecer",
+            "magma", "mako", "nih", "plasma", "random", "red", "redyell",
+            "rocket", "roi_i256", "surface", "turbo", "violet", "viridis",
+            "warm", "winter", "x_rain"
+        ]
+
+    def add_colormap(self, name: str, color_map: dict):
+        """Add a colormap to the widget.
+
+        Parameters
+        ----------
+        name : str
+            The name of the colormap.
+        color_map : dict
+            A dictionary containing the colormap information. It must have the following keys:
+
+            **Required keys**:
+                - `'R'`: list of numbers
+                - `'G'`: list of numbers
+                - `'B'`: list of numbers
+                - `'A'`: list of numbers
+                - `'I'`: list of numbers
+
+            **Optional keys**:
+                - `'min'`: number
+                - `'max'`: number
+                - `'labels'`: list of strings
+
+            All the `'R'`, `'G'`, `'B'`, `'A'`, `'I'` lists must have the same length.
+
+        Raises
+        ------
+        ValueError
+            If the colormap does not meet the required format.
+        TypeError
+            If the colormap values are not of the correct type.
+        """
+        # Validate that required keys are present and are lists of numbers
+        required_keys = ['R', 'G', 'B', 'A', 'I']
+        for key in required_keys:
+            if key not in color_map:
+                raise ValueError(f"ColorMap must include required key '{key}'")
+            if not isinstance(color_map[key], list):
+                raise TypeError(f"ColorMap key '{key}' must be a list")
+            if not all(isinstance(x, (int, float)) for x in color_map[key]):
+                raise TypeError(f"All elements in ColorMap key '{key}' must be numbers")
+
+        # Check that all required lists have the same length
+        lengths = [len(color_map[key]) for key in required_keys]
+        if len(set(lengths)) != 1:
+            raise ValueError("All 'R', 'G', 'B', 'A', 'I' lists must have the same length")
+
+        # Validate optional keys
+        if 'min' in color_map and not isinstance(color_map['min'], (int, float)):
+            raise TypeError("ColorMap 'min' must be a number")
+
+        if 'max' in color_map and not isinstance(color_map['max'], (int, float)):
+            raise TypeError("ColorMap 'max' must be a number")
+
+        if 'labels' in color_map:
+            if not isinstance(color_map['labels'], list):
+                raise TypeError("ColorMap 'labels' must be a list of strings")
+            if not all(isinstance(label, str) for label in color_map['labels']):
+                raise TypeError("All elements in ColorMap 'labels' must be strings")
+            if len(color_map['labels']) != lengths[0]:
+                raise ValueError("ColorMap 'labels' must have the same length as 'R', 'G', 'B', 'A', 'I' lists")
+
+        # Send the colormap to the frontend
+        self.send({
+            'type': 'add_colormap',
+            'data': {
+                'name': name,
+                'cmap': color_map
+            }
+        })
+    
+    def set_colormap(self, imageID: str, colormap: str):
+        """set the colormap for a volume
+
+        Parameters
+        ----------
+        imageID : str
+            The ID of the volume.
+        colormap : str
+            The name of the colormap to set.
+        
+        Raises
+        ------
+        ValueError
+            If the volume with the given ID is not found.
+        """
+        idx = self.get_volume_index_by_id(imageID)
+        if idx != -1:
+            self._volumes[idx].colormap = colormap
+        else:
+            raise ValueError(f"Volume with ID '{imageID}' not found")
+    
+    def set_selection_box_color(self, color: tuple):
+        """set the selection box color
+
+        Parameters
+        ----------
+        color : tuple of floats
+            An RGBA array with values ranging from 0 to 1.
+
+        Raises
+        -------
+        ValueError
+            If the color is not a list of four numeric values.
+        """
+        if not isinstance(color, (list, tuple)) or len(color) != 4:
+            raise ValueError("Color must be a list or tuple of four numeric values (RGBA).")
+        if not all(isinstance(c, (int, float)) and 0 <= c <= 1 for c in color):
+            raise ValueError("Each color component must be a number between 0 and 1.")
+        
+        self.selection_box_color = tuple(color)
+
+    def set_crosshair_color(self, color: tuple):
+        """set the crosshair and colorbar outline color
+
+        Parameters
+        ----------
+        color : tuple of floats
+            An RGBA array with values ranging from 0 to 1.
+
+        Raises
+        -------
+        ValueError
+            If the color is not a list of four numeric values.
+        """
+        if not isinstance(color, (list, tuple)) or len(color) != 4:
+            raise ValueError("Color must be a list or tuple of four numeric values (RGBA).")
+        if not all(isinstance(c, (int, float)) and 0 <= c <= 1 for c in color):
+            raise ValueError("Each color component must be a number between 0 and 1.")
+        
+        self.crosshair_color = tuple(color)
+    
+    def set_crosshair_width(self, width: int):
+        """set the crosshair width
+
+        Parameters
+        ----------
+        width : int
+            The width of the crosshair in pixels.
+        """
+        self.crosshair_width = width
+
+    def set_gamma(self, gamma: float):
+        """Adjust screen gamma. Low values emphasize shadows but can appear flat, high gamma hides shadow details.
+
+        Parameters
+        ----------
+        gamma : float
+            Selects luminance
+
+        Raises
+        ------
+        TypeError
+            If gamma is not a number
+
+        Example
+        -------
+        >>> nv.set_gamma(1.0)
+        """
+        if not isinstance(gamma, (int, float)):
+            raise TypeError("gamma must be a number")
+
+        self.send({
+            'type': 'set_gamma',
+            'data': gamma
+        })
 
 class WidgetObserver:
     """Sets an observed for `widget` on the `attribute` of `object`."""

@@ -1,9 +1,10 @@
 import enum
 
 __all__ = [
+    "SliceType",
     "DragMode",
     "MuliplanarType",
-    "SliceType",
+    "ShowRender",
 ]
 
 
@@ -14,12 +15,10 @@ class SliceType(enum.Enum):
     MULTIPLANAR = 3
     RENDER = 4
 
-
 class DragMode(enum.Enum):
     CONTRAST = 1
     MEASUREMENT = 2
     PAN = 3
-
 
 class MuliplanarType(enum.Enum):
     AUTO = 0
@@ -27,6 +26,10 @@ class MuliplanarType(enum.Enum):
     GRID = 2
     ROW = 3
 
+class ShowRender(enum.Enum):
+    NEVER = 0,
+    ALWAYS = 1,
+    AUTO = 2
 
 _SNAKE_TO_CAMEL_OVERRIDES = {
     "show_3d_crosshair": "show3Dcrosshair",

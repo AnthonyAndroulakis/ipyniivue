@@ -62,11 +62,19 @@ function create_volume(
 		nv.updateGLVolume();
 	}
 
+	function colormap_invert_changed() {
+		volume.colormapInvert = vmodel.get("colormap_invert");
+		nv.updateGLVolume();
+	}
+
 	vmodel.on("change:colorbar_visible", colorbar_visible_changed);
 	vmodel.on("change:cal_min", cal_min_changed);
 	vmodel.on("change:cal_max", cal_max_changed);
 	vmodel.on("change:colormap", colormap_changed);
 	vmodel.on("change:opacity", opacity_changed);
+
+	vmodel.on("change:colormap_invert", colormap_invert_changed);
+
 	return [
 		volume,
 		() => {
@@ -75,6 +83,8 @@ function create_volume(
 			vmodel.off("change:cal_max", cal_max_changed);
 			vmodel.off("change:colormap", colormap_changed);
 			vmodel.off("change:opacity", opacity_changed);
+
+			vmodel.off("change:colormap_invert", colormap_invert_changed);
 		},
 	];
 }
