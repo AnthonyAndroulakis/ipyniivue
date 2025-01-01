@@ -1,5 +1,6 @@
 import pathlib
 import typing
+import uuid
 
 import anywidget
 import ipywidgets
@@ -162,6 +163,7 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
 
     # other properties
     background_masks_overlays = t.Bool(False).tag(sync=True)
+    id = t.Unicode(default_value=str(uuid.uuid4()), read_only=True).tag(sync=True)
 
     def __init__(self, height: int = 300, **options):
         # convert to JS camelCase options

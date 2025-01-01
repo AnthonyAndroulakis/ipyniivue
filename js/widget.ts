@@ -5,7 +5,7 @@ import { Disposer } from "./lib.ts";
 import { render_meshes } from "./mesh.ts";
 import { render_volumes } from "./volume.ts";
 
-const nvMap = new WeakMap<Model, niivue.Niivue>();
+const nvMap = new Map<string, niivue.Niivue>();
 
 export default {
 	async render({ model, el }: { model: Model; el: HTMLElement }) {
@@ -16,11 +16,12 @@ export default {
 		container.appendChild(canvas);
 		el.appendChild(container);
 
-    let nv = nvMap.get(model);
+    let nv = nvMap.get(model.get("id"));
     
     if (!nv) {
+      console.log("Creating new Niivue instance");
       nv = new niivue.Niivue(model.get("_opts"));
-      nvMap.set(model, nv);
+      nvMap.set(model.get("id"), nv);
 
       nv.attachToCanvas(canvas);
 

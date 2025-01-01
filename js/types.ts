@@ -48,4 +48,5 @@ export type Model = AnyModel<{
 	_opts: Record<string, unknown>;
 
 	background_masks_overlays: boolean;
+	id: string;
 }>;
