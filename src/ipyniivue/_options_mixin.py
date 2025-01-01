@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ._constants import DragMode, MuliplanarType, SliceType
+from ._constants import DragMode, MuliplanarType, SliceType, ShowRender
 
 __all__ = ["OptionsMixin"]
-
 
 class OptionsMixin:
     @property
@@ -217,6 +216,14 @@ class OptionsMixin:
     @multiplanar_force_render.setter
     def multiplanar_force_render(self, value: bool):
         self._opts = {**self._opts, "multiplanarForceRender": value}
+
+    @property
+    def multiplanar_show_render(self) -> typing.Any:
+        return self._opts.get("multiplanarShowRender", ShowRender.AUTO)
+
+    @multiplanar_show_render.setter
+    def multiplanar_show_render(self, value: typing.Any):
+        self._opts = {**self._opts, "multiplanarShowRender": value}
 
     @property
     def is_radiological_convention(self) -> bool:

@@ -1,11 +1,15 @@
 import pathlib
+import typing
 
 import anywidget
 import ipywidgets
 import traitlets as t
 from ipywidgets import CallbackDispatcher
 
-from ._constants import _SNAKE_TO_CAMEL_OVERRIDES
+from ._constants import (
+    _SNAKE_TO_CAMEL_OVERRIDES,
+    SliceType,
+)
 from ._options_mixin import OptionsMixin
 from ._utils import (
     file_serializer,
@@ -27,6 +31,14 @@ class Mesh(ipywidgets.Widget):
     visible = t.Bool(True).tag(sync=True)
     layers = t.List([]).tag(sync=True, to_json=mesh_layers_serializer)
 
+    # other properties that aren't in init
+    colormap_invert = t.Bool(False).tag(sync=True)
+
+    def __init__(self, **kwargs):
+        if 'colormap_invert' in kwargs:
+            kwargs.pop('colormap_invert')
+        super().__init__(**kwargs)
+
     @t.validate('path')
     def _validate_path(self, proposal):
         if 'path' in self._trait_values and self.path and self.path != proposal['value']:
@@ -38,6 +50,7 @@ class Mesh(ipywidgets.Widget):
         if 'id' in self._trait_values and self.id and self.id != proposal['value']:
             raise t.TraitError('Cannot modify id once set.')
         return proposal['value']
+
 
 class Volume(ipywidgets.Widget):
     # variables in init
@@ -59,7 +72,6 @@ class Volume(ipywidgets.Widget):
         if 'colormap_invert' in kwargs:
             kwargs.pop('colormap_invert')
         super().__init__(**kwargs)
-
 
     @t.validate('path')
     def _validate_path(self, proposal):
@@ -147,6 +159,9 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
     _meshes = t.List(t.Instance(Mesh), default_value=[]).tag(
         sync=True, **ipywidgets.widget_serialization
     )
+
+    # other properties
+    background_masks_overlays = t.Bool(False).tag(sync=True)
 
     def __init__(self, height: int = 300, **options):
         # convert to JS camelCase options
@@ -912,6 +927,136 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         self.send({
             'type': 'set_gamma',
             'data': gamma
+        })
+
+    def set_slice_type(self, slice_type: SliceType):
+        """Set the type of slice display.
+
+        Parameters
+        ----------
+        slice_type : SliceType
+            The type of slice display. Options are `SliceType.AXIAL`, `SliceType.CORONAL`, `SliceType.SAGITTAL`, `SliceType.MULTIPLANAR, and `SliceType.RENDER`.
+
+        Raises
+        ------
+        TypeError
+            If slice_type is not a valid SliceType.
+
+        Example
+        -------
+        >>> nv.set_slice_type(SliceType.AXIAL)
+        """
+        if slice_type not in SliceType:
+            raise TypeError("slice_type must be a valid SliceType")
+
+        self.slice_type = slice_type
+    
+    def set_mesh_layer_property(self, mesh_id: str, layer_index: int, attribute: str, value: typing.Any):
+        """Set a property of a mesh layer.
+
+        Parameters
+        ----------
+        mesh_id : str
+            Identifier of the mesh to change (mesh id).
+        layer_index : int
+            The index of the layer within the mesh.
+        attribute : str
+            The attribute to change (one of the allowed attributes).
+        value : Any
+            The value to set.
+
+        Raises
+        ------
+        ValueError
+            If the attribute is not allowed.
+        IndexError
+            If the layer index is out of range.
+
+        Examples
+        --------
+        >>> nv.set_mesh_layer_property(nv.meshes[0].id, 0, 'opacity', 0.5)
+        """
+        allowed_attributes = {
+            'opacity',
+            'colormap',
+            'colormap_negative',
+            'use_negative_cmap',
+            'cal_min',
+            'cal_max',
+        }
+
+        if attribute not in allowed_attributes:
+            raise ValueError(f"Attribute '{attribute}' is not allowed.")
+
+        idx = self.get_mesh_index_by_id(mesh_id)
+        if idx == -1:
+            raise ValueError(f"Mesh with id '{mesh_id}' not found.")
+
+        mesh = self._meshes[idx]
+        if layer_index < 0 or layer_index >= len(mesh.layers):
+            raise IndexError(f"Layer index {layer_index} out of range.")
+
+        layer = mesh.layers[layer_index]
+        layer[attribute] = value
+    
+    def set_clip_plane(self, depth: float, azimuth: float, elevation: float):
+        """Update the clip plane orientation in 3D view mode.
+
+        Parameters
+        ----------
+        depth : float
+            distance of clip plane from the center of the volume (e.g., 2.0 for no clip plane)
+        azimuth : float
+            camera position in degrees around the object, typically 0..360 (or -180..+180)
+        elevation : float
+            camera height in degrees, range -90..90
+
+        Raises
+        ------
+        TypeError
+            If any of the inputs are not a number.
+        
+        Example
+        -------
+        >>> nv.set_clip_plane(2.0, 42.0, 42.0)
+        """
+        # Verify that all inputs are numeric types
+        if not all(isinstance(x, (int, float)) for x in [depth, azimuth, elevation]):
+            raise TypeError(
+                "depth, azimuth, and elevation must all be numeric values."
+            )
+
+        self.send({
+            'type': 'set_clip_plane',
+            'data': [depth, azimuth, elevation]
+        })
+
+    def set_render_azimuth_elevation(self, azimuth: float, elevation: float):
+        """Set the rotation of the 3D render view.
+
+        Parameters
+        ----------
+        azimuth : float
+            The azimuth angle in degrees around the object, typically 0..360 (or -180..+180).
+        elevation : float
+            The elevation angle in degrees, range -90..90.
+
+        Raises
+        ------
+        TypeError
+            If azimuth or elevation is not a number.
+
+        Example
+        -------
+        >>> nv.set_render_azimuth_elevation(45, 15)
+        """
+        if not isinstance(azimuth, (int, float)):
+            raise TypeError("Azimuth must be a number.")
+        if not isinstance(elevation, (int, float)):
+            raise TypeError("Elevation must be a number.")
+        self.send({
+            'type': 'set_render_azimuth_elevation',
+            'data': [azimuth, elevation]
         })
 
 class WidgetObserver:

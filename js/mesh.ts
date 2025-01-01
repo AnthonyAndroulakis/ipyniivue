@@ -58,15 +58,24 @@ function create_mesh(
 		mesh.updateMesh(nv.gl);
 		nv.updateGLVolume();
 	}
+	function colormap_invert_changed() {
+		mesh.colormapInvert = mmodel.get("colormap_invert");
+		nv.updateGLVolume();
+	}
+
 	mmodel.on("change:opacity", opacity_changed);
 	mmodel.on("change:rgba255", rgba255_changed);
 	mmodel.on("change:visible", visible_changed);
+
+	mmodel.on("change:colormap_invert", colormap_invert_changed);
 	return [
 		mesh,
 		() => {
 			mmodel.off("change:opacity", opacity_changed);
 			mmodel.off("change:rgba255", rgba255_changed);
 			mmodel.off("change:visible", visible_changed);
+
+			mmodel.off("change:colormap_invert", colormap_invert_changed);
 		},
 	];
 }

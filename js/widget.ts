@@ -278,6 +278,15 @@ export default {
 			container.style.height = `${model.get("height")}px`;
 		});
 
+    model.on("change:background_masks_overlays", () => {
+      let backgroundMasksOverlays = model.get("background_masks_overlays");
+      console.log("backgroundMasksOverlays", backgroundMasksOverlays);
+      if (typeof backgroundMasksOverlays === "boolean") {
+        nv.backgroundMasksOverlays = Number(backgroundMasksOverlays)
+        nv.updateGLVolume();
+      }
+    });
+
     // Handle custom messages from the backend
     model.on("msg:custom", (payload: {type: string, data: any}) => {
       const { type, data } = payload;
@@ -291,6 +300,9 @@ export default {
         case "set_gamma":
           nv.setGamma(data);
           break;
+        case "set_clip_plane":
+          nv.setClipPlane(data);
+          break;
       }
     });
 
@@ -302,6 +314,8 @@ export default {
 			model.off("change:_opts");
       model.off("change:height");
       model.off("msg:custom");
+
+      model.off("change:background_masks_overlays");
 		};
 	},
 };

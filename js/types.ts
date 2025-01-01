@@ -37,6 +37,8 @@ export type MeshModel = { model_id: string } & AnyModel<{
 	opacity: number;
 	layers: Array<MeshLayer>;
 	visible: boolean;
+
+	colormap_invert: boolean;
 }>;
 
 export type Model = AnyModel<{
@@ -44,4 +46,6 @@ export type Model = AnyModel<{
 	_volumes: Array<string>;
 	_meshes: Array<string>;
 	_opts: Record<string, unknown>;
+
+	background_masks_overlays: boolean;
 }>;
