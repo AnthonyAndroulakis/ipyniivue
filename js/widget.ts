@@ -176,44 +176,59 @@ export default {
         // Check if the mesh is already in the backend
         const meshID = mesh.id;
         const meshModels = await Promise.all(
-          model.get("_meshes").map(async (m: string) => {
-            const modelID = m.slice("IPY_MODEL_".length);
-            const mmodel = await model.widget_manager.get_model(modelID);
-            return mmodel;
-          })
+            model.get("_meshes").map(async (m: string) => {
+                const modelID = m.slice("IPY_MODEL_".length);
+                const mmodel = await model.widget_manager.get_model(modelID);
+                return mmodel;
+            })
         );
-
+    
         const backendMeshIds = meshModels.map((mmodel) => mmodel?.get("id") || "");
-
+    
         if (!backendMeshIds.includes(meshID) && nv) {
-          // Mesh is new; create a new MeshModel in the backend
-          const meshData = {
-            path: '<preloaded>',
-            id: mesh.id,
-            name: mesh.name,
-            rgba255: Array.from(mesh.rgba255),
-            opacity: mesh.opacity,
-            layers: [], // Add layers if any
-            visible: mesh.visible,
-            // Include the index of the mesh in nv.meshes
-            index: nv.meshes.findIndex((m) => m.id === mesh.id),
-          };
-
-          // Send a custom message to the backend to add the mesh
-          model.send({
-            event: "add_mesh",
-            data: meshData,
-          });
+            // Mesh is new; create a new MeshModel in the backend
+    
+            // Prepare layers data
+            const layersData = mesh.layers.map((layer, index) => {
+                return {
+                    path: '<preloaded>',
+                    opacity: layer.opacity,
+                    colormap: layer.colormap,
+                    colormap_negative: layer.colormapNegative,
+                    use_negative_cmap: layer.useNegativeCmap,
+                    cal_min: layer.cal_min,
+                    cal_max: layer.cal_max,
+                    frame4D: layer.frame4D,
+                };
+            });
+    
+            const meshData = {
+                path: '<preloaded>',
+                id: mesh.id,
+                name: mesh.name,
+                rgba255: Array.from(mesh.rgba255),
+                opacity: mesh.opacity,
+                visible: mesh.visible,
+                layers: layersData,
+                // Include the index of the mesh in nv.meshes
+                index: nv.meshes.findIndex((m) => m.id === mesh.id),
+            };
+    
+            // Send a custom message to the backend to add the mesh
+            model.send({
+                event: "add_mesh",
+                data: meshData,
+            });
         }
 
         // Existing code for handling mesh_loaded event
         model.send({
-          event: "mesh_loaded",
-          data: {
-            id: mesh.id,
-          },
+            event: "mesh_loaded",
+            data: {
+                id: mesh.id,
+            },
         });
-      };
+    };
 
       nv.onMouseUp = function (data: any) {
         model.send({
@@ -264,6 +279,8 @@ export default {
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
 		model.on("change:_meshes", () => render_meshes(nv, model, disposer));
 
+    console.log("NV:", nv);
+
 		// Any time we change the options, we need to update the nv object
 		// and redraw the scene.
     model.on("change:_opts", () => {
@@ -281,7 +298,6 @@ export default {
 
     model.on("change:background_masks_overlays", () => {
       let backgroundMasksOverlays = model.get("background_masks_overlays");
-      console.log("backgroundMasksOverlays", backgroundMasksOverlays);
       if (typeof backgroundMasksOverlays === "boolean") {
         nv.backgroundMasksOverlays = Number(backgroundMasksOverlays)
         nv.updateGLVolume();
@@ -303,6 +319,9 @@ export default {
           break;
         case "set_clip_plane":
           nv.setClipPlane(data);
+          break;
+        case "set_mesh_shader":
+          nv.setMeshShader(data.mesh_id, data.shader);
           break;
       }
     });

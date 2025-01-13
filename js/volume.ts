@@ -118,8 +118,8 @@ export async function render_volumes(
 	});
 
 	console.log('render_volumes called');
-	console.log('backend_volumes:', backend_volumes);
-	console.log('frontend_volumes:', frontend_volumes);
+	console.log('backend_volumes:', backend_volumes, backend_volumes.length);
+	console.log('frontend_volumes:', frontend_volumes, frontend_volumes.length);
   
 	// add volumes
 	for (const [id, vmodel] of backend_volume_map.entries()) {
@@ -131,7 +131,9 @@ export async function render_volumes(
 			// result: add volume
 			const [volume, cleanup] = create_volume(nv, vmodel);
 			disposer.register(volume, cleanup);
-			nv.addVolume(volume);
+			if (vmodel.get("path").name !== "<preloaded>") {
+				nv.addVolume(volume);
+			}
 		}
 	}
   

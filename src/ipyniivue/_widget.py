@@ -21,6 +21,27 @@ from ._utils import (
 
 __all__ = ["NiiVue"]
 
+class MeshLayer(ipywidgets.Widget):
+    path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
+        sync=True, to_json=file_serializer
+    )
+    opacity = t.Float(0.5).tag(sync=True)
+    colormap = t.Unicode("gray").tag(sync=True)
+    colormap_negative = t.Unicode("winter").tag(sync=True)
+    use_negative_cmap = t.Bool(False).tag(sync=True)
+    cal_min = t.Float(None, allow_none=True).tag(sync=True)
+    cal_max = t.Float(None, allow_none=True).tag(sync=True)
+    frame4D = t.Int(0).tag(sync=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @t.validate('path')
+    def _validate_path(self, proposal):
+        if 'path' in self._trait_values and self.path and self.path != proposal['value']:
+            raise t.TraitError('Cannot modify path once set.')
+        return proposal['value']
+
 class Mesh(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
@@ -30,7 +51,9 @@ class Mesh(ipywidgets.Widget):
     rgba255 = t.List([0, 0, 0, 0]).tag(sync=True)
     opacity = t.Float(1.0).tag(sync=True)
     visible = t.Bool(True).tag(sync=True)
-    layers = t.List([]).tag(sync=True, to_json=mesh_layers_serializer)
+    layers = t.List(t.Instance(MeshLayer), default_value=[]).tag(
+        sync=True, **ipywidgets.widget_serialization
+    )
 
     # other properties that aren't in init
     colormap_invert = t.Bool(False).tag(sync=True)
@@ -38,7 +61,9 @@ class Mesh(ipywidgets.Widget):
     def __init__(self, **kwargs):
         if 'colormap_invert' in kwargs:
             kwargs.pop('colormap_invert')
+        layers_data = kwargs.pop('layers', [])
         super().__init__(**kwargs)
+        self.layers = [MeshLayer(**layer_data) for layer_data in layers_data]
 
     @t.validate('path')
     def _validate_path(self, proposal):
@@ -244,7 +269,9 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
 
     def _add_mesh_from_frontend(self, mesh_data):
         index = mesh_data.pop('index', None)
+        layers_data = mesh_data.pop('layers', [])
         mesh = Mesh(**mesh_data)
+        mesh.layers = [MeshLayer(**layer_data) for layer_data in layers_data]
         if index is not None and 0 <= index <= len(self._meshes):
             self._meshes = self._meshes[:index] + [mesh] + self._meshes[index:]
         else:
@@ -963,14 +990,14 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         layer_index : int
             The index of the layer within the mesh.
         attribute : str
-            The attribute to change (one of the allowed attributes).
+            The attribute to change.
         value : Any
             The value to set.
 
         Raises
         ------
         ValueError
-            If the attribute is not allowed.
+            If the attribute is not allowed or the mesh is not found.
         IndexError
             If the layer index is out of range.
 
@@ -978,14 +1005,7 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         --------
         >>> nv.set_mesh_layer_property(nv.meshes[0].id, 0, 'opacity', 0.5)
         """
-        allowed_attributes = {
-            'opacity',
-            'colormap',
-            'colormap_negative',
-            'use_negative_cmap',
-            'cal_min',
-            'cal_max',
-        }
+        allowed_attributes = set(MeshLayer.class_traits().keys())
 
         if attribute not in allowed_attributes:
             raise ValueError(f"Attribute '{attribute}' is not allowed.")
@@ -999,7 +1019,7 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
             raise IndexError(f"Layer index {layer_index} out of range.")
 
         layer = mesh.layers[layer_index]
-        layer[attribute] = value
+        setattr(layer, attribute, value)
     
     def set_clip_plane(self, depth: float, azimuth: float, elevation: float):
         """Update the clip plane orientation in 3D view mode.
@@ -1059,6 +1079,37 @@ class NiiVue(OptionsMixin, anywidget.AnyWidget):
         self.send({
             'type': 'set_render_azimuth_elevation',
             'data': [azimuth, elevation]
+        })
+    
+    def set_mesh_shader(self, mesh_id: str, mesh_shader: str):
+        """Set the shader for a mesh.
+
+        Parameters
+        ----------
+        mesh_id : str
+            Identifier of the mesh to change (mesh id).
+        mesh_shader : str
+            The name of the shader to set.
+
+        Raises
+        ------
+        ValueError
+            If the mesh is not found.
+
+        Example
+        -------
+        >>> nv.set_mesh_shader(nv.meshes[0].id, 'toon')
+        """
+        idx = self.get_mesh_index_by_id(mesh_id)
+        if idx == -1:
+            raise ValueError(f"Mesh with id '{mesh_id}' not found.")
+
+        self.send({
+            'type': 'set_mesh_shader',
+            'data': {
+                'mesh_id': mesh_id,
+                'shader': mesh_shader
+            }
         })
 
 class WidgetObserver:

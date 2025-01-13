@@ -19,26 +19,27 @@ export type VolumeModel = { model_id: string } & AnyModel<{
 	colormap_invert: boolean;
 }>;
 
-interface MeshLayer {
-	path: File;
-	opacity: number;
-	colormap: string;
-	colormapNegative: string;
-	useNegativeCmap: boolean;
-	cal_min?: number;
-	cal_max?: number;
-}
+export type MeshLayerModel = { model_id: string } & AnyModel<{
+    path: File;
+    opacity: number;
+    colormap: string;
+    colormap_negative: string;
+    use_negative_cmap: boolean;
+    cal_min: number;
+    cal_max: number;
+    frame4D: number;
+}>;
 
 export type MeshModel = { model_id: string } & AnyModel<{
-	path: File;
-	id: string;
-	name: string;
-	rgba255: Array<number>;
-	opacity: number;
-	layers: Array<MeshLayer>;
-	visible: boolean;
+    path: File;
+    id: string;
+    name: string;
+    rgba255: Array<number>;
+    opacity: number;
+    layers: Array<string>;
+    visible: boolean;
 
-	colormap_invert: boolean;
+    colormap_invert: boolean;
 }>;
 
 export type Model = AnyModel<{
