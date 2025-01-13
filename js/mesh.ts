@@ -3,118 +3,88 @@ import * as lib from "./lib.ts";
 import type { MeshModel, MeshLayerModel, Model } from "./types.ts";
 
 /**
- * Create a new NVMesh and attach the necessary event listeners
- * Returns the NVMesh and a cleanup function that removes the event listeners.
+ * Set up event listeners to handle changes to the layer properties.
+ * Returns a function to clean up the event listeners.
  */
-async function create_mesh(
-    nv: niivue.Niivue,
-    mmodel: MeshModel,
-): Promise<[niivue.NVMesh, () => void]> {
-    let mesh: niivue.NVMesh;
-	let layerModels: MeshLayerModel[] = [];
-    if (mmodel.get("path").name === "<preloaded>") {
-        let idx = nv.meshes.findIndex((m) => m.id === mmodel.get("id"));
-        mesh = nv.meshes[idx];
-    } else {
-        mesh = niivue.NVMesh.readMesh(
-            mmodel.get("path").data.buffer,
-            mmodel.get("path").name,
-            nv.gl,
-            mmodel.get("opacity"),
-            new Uint8Array(mmodel.get("rgba255")),
-            mmodel.get("visible"),
-        );
+function setup_layer_property_listeners(
+    layer: any,
+    layerModel: MeshLayerModel,
+    mesh: niivue.NVMesh,
+    nv: niivue.Niivue
+): () => void {
 
-		// Gather MeshLayer models
-		const layerIDs = mmodel.get("layers");
-
-		if (layerIDs.length > 0) {
-			// Use gather_models to fetch the MeshLayerModel instances
-			layerModels = await lib.gather_models<MeshLayerModel>(
-				mmodel,
-				layerIDs,
-			);
-
-			// Add layers to the mesh
-			layerModels.forEach((layerModel) => {
-				let layer = niivue.NVMeshLoaders.readLayer(
-					layerModel.get("path").name,
-					layerModel.get("path").data.buffer,
-					mesh,
-					layerModel.get("opacity") ?? 0.5,
-					layerModel.get("colormap") ?? "warm",
-					layerModel.get("colormap_negative") ?? "winter",
-					layerModel.get("use_negative_cmap") ?? false,
-					layerModel.get("cal_min") ?? null,
-					layerModel.get("cal_max") ?? null,
-					layerModel.get("frame4D") ?? 0,
-				);
-                if (!layer) {
-                    return;
-                }
-                mesh.layers.push(layer);
-
-				// Observe changes to the layer propertie
-				// Handling 'opacity'
-				layerModel.on('change:opacity', () => {
-                    layer.opacity = layerModel.get('opacity');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'colormap'
-				layerModel.on('change:colormap', () => {
-                    layer.colormap = layerModel.get('colormap');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'colormap_negative' (mapped to 'colormapNegative')
-				layerModel.on('change:colormap_negative', () => {
-                    layer.colormapNegative = layerModel.get('colormap_negative');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'use_negative_cmap' (mapped to 'useNegativeCmap')
-				layerModel.on('change:use_negative_cmap', () => {
-                    layer.useNegativeCmap = layerModel.get('use_negative_cmap');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'cal_min'
-				layerModel.on('change:cal_min', () => {
-                    layer.cal_min = layerModel.get('cal_min');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'cal_max'
-				layerModel.on('change:cal_max', () => {
-                    layer.cal_max = layerModel.get('cal_max');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-				// Handling 'frame4D'
-				layerModel.on('change:frame4D', () => {
-                    layer.frame4D = layerModel.get('frame4D');
-                    mesh.updateMesh(nv.gl);
-					nv.updateGLVolume();
-				});
-
-			});
-		}
+    function opacity_changed() {
+        layer.opacity = layerModel.get('opacity');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
     }
 
-    mesh.updateMesh(nv.gl);
+    function colormap_changed() {
+        layer.colormap = layerModel.get('colormap');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
 
-    mmodel.set("id", mesh.id);
-    mmodel.set("name", mesh.name);
-    mmodel.save_changes();
+    function colormap_negative_changed() {
+        layer.colormapNegative = layerModel.get('colormap_negative');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
 
-    // Handle changes to the mesh properties
+    function use_negative_cmap_changed() {
+        layer.useNegativeCmap = layerModel.get('use_negative_cmap');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
+
+    function cal_min_changed() {
+        layer.cal_min = layerModel.get('cal_min');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
+
+    function cal_max_changed() {
+        layer.cal_max = layerModel.get('cal_max');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
+
+    function frame4D_changed() {
+        layer.frame4D = layerModel.get('frame4D');
+        mesh.updateMesh(nv.gl);
+        nv.updateGLVolume();
+    }
+
+    // Set up the event listeners
+    layerModel.on('change:opacity', opacity_changed);
+    layerModel.on('change:colormap', colormap_changed);
+    layerModel.on('change:colormap_negative', colormap_negative_changed);
+    layerModel.on('change:use_negative_cmap', use_negative_cmap_changed);
+    layerModel.on('change:cal_min', cal_min_changed);
+    layerModel.on('change:cal_max', cal_max_changed);
+    layerModel.on('change:frame4D', frame4D_changed);
+
+    // Return a cleanup function
+    return () => {
+        layerModel.off('change:opacity', opacity_changed);
+        layerModel.off('change:colormap', colormap_changed);
+        layerModel.off('change:colormap_negative', colormap_negative_changed);
+        layerModel.off('change:use_negative_cmap', use_negative_cmap_changed);
+        layerModel.off('change:cal_min', cal_min_changed);
+        layerModel.off('change:cal_max', cal_max_changed);
+        layerModel.off('change:frame4D', frame4D_changed);
+    };
+}
+
+/**
+ * Set up event listeners to handle changes to the mesh properties.
+ * Returns a function to clean up the event listeners.
+ */
+function setup_mesh_property_listeners(
+    mesh: niivue.NVMesh,
+    mmodel: MeshModel,
+    nv: niivue.Niivue
+): () => void {
     function opacity_changed() {
         mesh.opacity = mmodel.get("opacity");
         mesh.updateMesh(nv.gl);
@@ -140,30 +110,98 @@ async function create_mesh(
     mmodel.on("change:visible", visible_changed);
     mmodel.on("change:colormap_invert", colormap_invert_changed);
 
+    // Return a function to remove the event listeners
+    return () => {
+        mmodel.off("change:opacity", opacity_changed);
+        mmodel.off("change:rgba255", rgba255_changed);
+        mmodel.off("change:visible", visible_changed);
+        mmodel.off("change:colormap_invert", colormap_invert_changed);
+    };
+}
+
+/**
+ * Create a new NVMesh and attach the necessary event listeners
+ * Returns the NVMesh and a cleanup function that removes the event listeners.
+ */
+async function create_mesh(
+    nv: niivue.Niivue,
+    mmodel: MeshModel,
+): Promise<[niivue.NVMesh, () => void]> {
+    let mesh: niivue.NVMesh;
+	let layerModels: MeshLayerModel[] = [];
+    let layerCleanupFunctions: (() => void)[] = [];
+
+    if (mmodel.get("path").name === "<preloaded>") {
+        let idx = nv.meshes.findIndex((m) => m.id === mmodel.get("id"));
+        mesh = nv.meshes[idx];
+    } else {
+        mesh = niivue.NVMesh.readMesh(
+            mmodel.get("path").data.buffer,
+            mmodel.get("path").name,
+            nv.gl,
+            mmodel.get("opacity"),
+            new Uint8Array(mmodel.get("rgba255")),
+            mmodel.get("visible"),
+        );
+    }
+
+    // Gather MeshLayer models
+    const layerIDs = mmodel.get("layers");
+
+    if (layerIDs.length > 0) {
+        // Use gather_models to fetch the MeshLayerModel instances
+        layerModels = await lib.gather_models<MeshLayerModel>(
+            mmodel,
+            layerIDs,
+        );
+
+        // Add layers to the mesh
+        layerModels.forEach((layerModel, layerIndex) => {
+            let layer: any;
+            if (layerModel.get("path").name === "<preloaded>") {
+                layer = mesh.layers[layerIndex];
+            } else {
+                layer = niivue.NVMeshLoaders.readLayer(
+                    layerModel.get("path").name,
+                    layerModel.get("path").data.buffer,
+                    mesh,
+                    layerModel.get("opacity") ?? 0.5,
+                    layerModel.get("colormap") ?? "warm",
+                    layerModel.get("colormap_negative") ?? "winter",
+                    layerModel.get("use_negative_cmap") ?? false,
+                    layerModel.get("cal_min") ?? null,
+                    layerModel.get("cal_max") ?? null,
+                    layerModel.get("frame4D") ?? 0,
+                );
+                mesh.layers.push(layer);
+            }
+            if (!layer) {
+                return;
+            }
+
+            // Set up event listeners for the layer properties
+            const cleanup_layer_listeners = setup_layer_property_listeners(layer, layerModel, mesh, nv);
+            layerCleanupFunctions.push(cleanup_layer_listeners);
+        });
+    }
+
+    mesh.updateMesh(nv.gl);
+
+    mmodel.set("id", mesh.id);
+    mmodel.set("name", mesh.name);
+    mmodel.save_changes();
+
+    // Handle changes to the mesh properties
+    const cleanup_mesh_listeners = setup_mesh_property_listeners(mesh, mmodel, nv);
+
     return [
         mesh,
         () => {
             // Remove event listeners for mesh properties
-            mmodel.off("change:opacity", opacity_changed);
-            mmodel.off("change:rgba255", rgba255_changed);
-            mmodel.off("change:visible", visible_changed);
-            mmodel.off("change:colormap_invert", colormap_invert_changed);
+            cleanup_mesh_listeners();
 
             // Remove event listeners for layer properties
-            layerModels.forEach((layerModel) => {
-                const properties = [
-                    "opacity",
-                    "colormap",
-                    "colormap_negative",
-                    "use_negative_cmap",
-                    "cal_min",
-                    "cal_max",
-                    "frame4D",
-                ];
-                properties.forEach((prop) => {
-                    layerModel.off(`change:${prop}`);
-                });
-            });
+            layerCleanupFunctions.forEach(cleanup => cleanup());
         },
     ];
 }
@@ -207,7 +245,7 @@ export async function render_meshes(
             // Create and add the mesh
             const [mesh, cleanup] = await create_mesh(nv, mmodel);
             disposer.register(mesh, cleanup);
-            if (mmodel.get("path").name === "<preloaded>") {
+            if (mmodel.get("path").name !== "<preloaded>") {
                 nv.addMesh(mesh);
             }
         }
