@@ -1,6 +1,7 @@
 import * as niivue from "@niivue/niivue";
-import type { Model } from "./types.ts";
+import { v4 as uuidv4 } from '@lukeed/uuid';
 
+import type { Model } from "./types.ts";
 import { Disposer } from "./lib.ts";
 import { render_meshes } from "./mesh.ts";
 import { render_volumes } from "./volume.ts";
@@ -189,7 +190,10 @@ export default {
             // Mesh is new; create a new MeshModel in the backend
     
             // Prepare layers data
-            const layersData = mesh.layers.map((layer, index) => {
+            const layersData = mesh.layers.map((layer: any) => {
+                if (!layer.id) {
+                  layer.id = uuidv4();
+                }
                 return {
                     path: '<preloaded>',
                     opacity: layer.opacity,
@@ -199,6 +203,7 @@ export default {
                     cal_min: layer.cal_min,
                     cal_max: layer.cal_max,
                     frame4D: layer.frame4D,
+                    id: layer.id,
                 };
             });
     

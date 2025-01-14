@@ -1,5 +1,4 @@
 import type { AnyModel } from "@anywidget/types";
-import * as nv from "@niivue/niivue";
 import type { Model } from "./types.ts";
 
 /**

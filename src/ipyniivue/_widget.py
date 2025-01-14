@@ -25,6 +25,7 @@ class MeshLayer(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(
         sync=True, to_json=file_serializer
     )
+    id = t.Unicode(default_value="").tag(sync=True)
     opacity = t.Float(0.5).tag(sync=True)
     colormap = t.Unicode("gray").tag(sync=True)
     colormap_negative = t.Unicode("winter").tag(sync=True)
@@ -41,6 +42,13 @@ class MeshLayer(ipywidgets.Widget):
         if 'path' in self._trait_values and self.path and self.path != proposal['value']:
             raise t.TraitError('Cannot modify path once set.')
         return proposal['value']
+
+    @t.validate('id')
+    def _validate_id(self, proposal):
+        if 'id' in self._trait_values and self.id and self.id != proposal['value']:
+            raise t.TraitError('Cannot modify id once set.')
+        return proposal['value']
+
 
 class Mesh(ipywidgets.Widget):
     path = t.Union([t.Instance(pathlib.Path), t.Unicode()]).tag(

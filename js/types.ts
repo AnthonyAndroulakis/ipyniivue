@@ -21,6 +21,7 @@ export type VolumeModel = { model_id: string } & AnyModel<{
 
 export type MeshLayerModel = { model_id: string } & AnyModel<{
     path: File;
+	id: string;
     opacity: number;
     colormap: string;
     colormap_negative: string;

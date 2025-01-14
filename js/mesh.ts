@@ -1,4 +1,5 @@
 import * as niivue from "@niivue/niivue";
+import { v4 as uuidv4 } from '@lukeed/uuid';
 import * as lib from "./lib.ts";
 import type { MeshModel, MeshLayerModel, Model } from "./types.ts";
 
@@ -173,7 +174,10 @@ async function create_mesh(
                     layerModel.get("cal_max") ?? null,
                     layerModel.get("frame4D") ?? 0,
                 );
+                layer.id = uuidv4();
                 mesh.layers.push(layer);
+                layerModel.set("id", layer.id);
+                layerModel.save_changes();
             }
             if (!layer) {
                 return;
