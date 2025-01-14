@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from '@lukeed/uuid';
 
 import type { Model } from "./types.ts";
 import { Disposer } from "./lib.ts";
-import { render_meshes } from "./mesh.ts";
+import { render_meshes, setMeshGL } from "./mesh.ts";
 import { render_volumes } from "./volume.ts";
 
 const nvMap = new Map<string, niivue.Niivue>();
@@ -185,6 +185,7 @@ export default {
         );
     
         const backendMeshIds = meshModels.map((mmodel) => mmodel?.get("id") || "");
+        console.log(backendMeshIds)
     
         if (!backendMeshIds.includes(meshID) && nv) {
             // Mesh is new; create a new MeshModel in the backend
@@ -233,7 +234,7 @@ export default {
                 id: mesh.id,
             },
         });
-    };
+      };
 
       nv.onMouseUp = function (data: any) {
         model.send({
@@ -278,9 +279,16 @@ export default {
       await render_meshes(nv, model, disposer);
     } else {
       // For re-renders, attach nv to the new canvas
-      nv.attachToCanvas(canvas);
+      await nv.attachToCanvas(canvas);
+      nv.meshes.forEach((mesh) => {
+        if (nv) {
+          setMeshGL(mesh, nv.gl);
+        }
+      });
+      nv.drawScene();
+      nv.updateGLVolume();
     }
-	
+
 		model.on("change:_volumes", () => render_volumes(nv, model, disposer));
 		model.on("change:_meshes", () => render_meshes(nv, model, disposer));
 

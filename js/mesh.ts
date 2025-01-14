@@ -159,9 +159,7 @@ async function create_mesh(
         // Add layers to the mesh
         layerModels.forEach((layerModel, layerIndex) => {
             let layer: any;
-            if (layerModel.get("path").name === "<preloaded>") {
-                layer = mesh.layers[layerIndex];
-            } else {
+            if (layerModel.get("path").name !== "<preloaded>" && layerModel.get("id") === "") {
                 layer = niivue.NVMeshLoaders.readLayer(
                     layerModel.get("path").name,
                     layerModel.get("path").data.buffer,
@@ -178,6 +176,9 @@ async function create_mesh(
                 mesh.layers.push(layer);
                 layerModel.set("id", layer.id);
                 layerModel.save_changes();
+            } else {
+                let idx = mesh.layers.findIndex((l: any) => l.id === layerModel.get("id"));
+                layer = mesh.layers[idx];
             }
             if (!layer) {
                 return;
@@ -275,4 +276,64 @@ export async function render_meshes(
     });
     nv.meshes = new_meshes_order;
     nv.updateGLVolume();
+}
+
+export function setMeshGL(mesh: any, gl: WebGL2RenderingContext) {
+    // update the gl context
+    mesh.gl = gl;
+
+    // cleanup old WebGL resources
+    if (mesh.vertexBuffer) gl.deleteBuffer(mesh.vertexBuffer);
+    if (mesh.indexBuffer) gl.deleteBuffer(mesh.indexBuffer);
+    if (mesh.vao) gl.deleteVertexArray(mesh.vao);
+    if (mesh.vaoFiber) gl.deleteVertexArray(mesh.vaoFiber);
+
+    // recreate WebGL resources
+    mesh.vertexBuffer = gl.createBuffer();
+    mesh.indexBuffer = gl.createBuffer();
+    mesh.vao = gl.createVertexArray();
+    mesh.vaoFiber = gl.createVertexArray();
+
+    // the VAO binds the vertices and indices as well as describing the vertex layout
+    gl.bindVertexArray(mesh.vao);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+    // vertex position: 3 floats X,Y,Z
+    gl.enableVertexAttribArray(0);
+
+    gl.enableVertexAttribArray(1);
+    const f32PerVertex = mesh.f32PerVertex;
+    if (f32PerVertex !== 7) {
+        // n32
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0);
+        // vertex surface normal vector: (also three floats)
+        gl.vertexAttribPointer(1, 4, gl.BYTE, true, 20, 12);
+        // vertex color
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 20, 16);
+    } else {
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
+        // vertex surface normal vector: (also three floats)
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
+        // vertex color
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 28, 24);
+    }
+    gl.bindVertexArray(null);
+
+    if (mesh.rgba255 && mesh.rgba255[3] < 1) {
+        mesh.updateFibers(gl);
+        // define VAO
+        gl.bindVertexArray(mesh.vaoFiber);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+        // vertex position: 3 floats X,Y,Z
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 16, 0);
+        // vertex color
+        gl.enableVertexAttribArray(1);
+        gl.vertexAttribPointer(1, 4, gl.UNSIGNED_BYTE, true, 16, 12);
+        gl.bindVertexArray(null);
+    }
+    mesh.updateMesh(gl);
 }
