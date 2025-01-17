@@ -56,6 +56,11 @@ function setup_layer_property_listeners(
         nv.updateGLVolume();
     }
 
+    function colormap_invert_changed() {
+        layer.colormapInvert = layerModel.get('colormap_invert');
+        nv.updateGLVolume();
+    }
+
     // Set up the event listeners
     layerModel.on('change:opacity', opacity_changed);
     layerModel.on('change:colormap', colormap_changed);
@@ -64,6 +69,7 @@ function setup_layer_property_listeners(
     layerModel.on('change:cal_min', cal_min_changed);
     layerModel.on('change:cal_max', cal_max_changed);
     layerModel.on('change:frame4D', frame4D_changed);
+    layerModel.on('change:colormap_invert', colormap_invert_changed);
 
     // Return a cleanup function
     return () => {
@@ -74,6 +80,7 @@ function setup_layer_property_listeners(
         layerModel.off('change:cal_min', cal_min_changed);
         layerModel.off('change:cal_max', cal_max_changed);
         layerModel.off('change:frame4D', frame4D_changed);
+        layerModel.off('change:colormap_invert', colormap_invert_changed);
     };
 }
 
@@ -276,64 +283,4 @@ export async function render_meshes(
     });
     nv.meshes = new_meshes_order;
     nv.updateGLVolume();
-}
-
-export function setMeshGL(mesh: any, gl: WebGL2RenderingContext) {
-    // update the gl context
-    mesh.gl = gl;
-
-    // cleanup old WebGL resources
-    if (mesh.vertexBuffer) gl.deleteBuffer(mesh.vertexBuffer);
-    if (mesh.indexBuffer) gl.deleteBuffer(mesh.indexBuffer);
-    if (mesh.vao) gl.deleteVertexArray(mesh.vao);
-    if (mesh.vaoFiber) gl.deleteVertexArray(mesh.vaoFiber);
-
-    // recreate WebGL resources
-    mesh.vertexBuffer = gl.createBuffer();
-    mesh.indexBuffer = gl.createBuffer();
-    mesh.vao = gl.createVertexArray();
-    mesh.vaoFiber = gl.createVertexArray();
-
-    // the VAO binds the vertices and indices as well as describing the vertex layout
-    gl.bindVertexArray(mesh.vao);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
-    // vertex position: 3 floats X,Y,Z
-    gl.enableVertexAttribArray(0);
-
-    gl.enableVertexAttribArray(1);
-    const f32PerVertex = mesh.f32PerVertex;
-    if (f32PerVertex !== 7) {
-        // n32
-        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0);
-        // vertex surface normal vector: (also three floats)
-        gl.vertexAttribPointer(1, 4, gl.BYTE, true, 20, 12);
-        // vertex color
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 20, 16);
-    } else {
-        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
-        // vertex surface normal vector: (also three floats)
-        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
-        // vertex color
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 28, 24);
-    }
-    gl.bindVertexArray(null);
-
-    if (mesh.rgba255 && mesh.rgba255[3] < 1) {
-        mesh.updateFibers(gl);
-        // define VAO
-        gl.bindVertexArray(mesh.vaoFiber);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
-        // vertex position: 3 floats X,Y,Z
-        gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 16, 0);
-        // vertex color
-        gl.enableVertexAttribArray(1);
-        gl.vertexAttribPointer(1, 4, gl.UNSIGNED_BYTE, true, 16, 12);
-        gl.bindVertexArray(null);
-    }
-    mesh.updateMesh(gl);
 }

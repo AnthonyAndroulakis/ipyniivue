@@ -34,7 +34,12 @@ class MeshLayer(ipywidgets.Widget):
     cal_max = t.Float(None, allow_none=True).tag(sync=True)
     frame4D = t.Int(0).tag(sync=True)
 
+    # other properties that aren't in init
+    colormap_invert = t.Bool(False).tag(sync=True)
+
     def __init__(self, **kwargs):
+        if 'colormap_invert' in kwargs:
+            kwargs.pop('colormap_invert')
         super().__init__(**kwargs)
 
     @t.validate('path')

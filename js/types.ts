@@ -20,27 +20,29 @@ export type VolumeModel = { model_id: string } & AnyModel<{
 }>;
 
 export type MeshLayerModel = { model_id: string } & AnyModel<{
-    path: File;
+	path: File;
 	id: string;
-    opacity: number;
-    colormap: string;
-    colormap_negative: string;
-    use_negative_cmap: boolean;
-    cal_min: number;
-    cal_max: number;
-    frame4D: number;
+	opacity: number;
+	colormap: string;
+	colormap_negative: string;
+	use_negative_cmap: boolean;
+	cal_min: number;
+	cal_max: number;
+	frame4D: number;
+
+	colormap_invert: boolean;
 }>;
 
 export type MeshModel = { model_id: string } & AnyModel<{
-    path: File;
-    id: string;
-    name: string;
-    rgba255: Array<number>;
-    opacity: number;
-    layers: Array<string>;
-    visible: boolean;
+	path: File;
+	id: string;
+	name: string;
+	rgba255: Array<number>;
+	opacity: number;
+	layers: Array<string>;
+	visible: boolean;
 
-    colormap_invert: boolean;
+	colormap_invert: boolean;
 }>;
 
 export type Model = AnyModel<{
